@@ -7,10 +7,11 @@ import {
   compareBindingsByTag,
   filterByTag,
   Handler,
+  inject,
   InvocationHandlerChain,
 } from '@loopback/context';
 import {Response} from 'express';
-import {RestTags} from './keys';
+import {RestBindings, RestTags} from './keys';
 import {RequestContext} from './request-context';
 import {OperationRetval, RestAction} from './types';
 import {writeResultToResponse} from './writer';
@@ -39,6 +40,27 @@ export interface SequenceHandler {
 }
 
 /**
+ * Options for a sequence
+ */
+export type SequenceOptions = {
+  /**
+   * Order of actions by phase
+   */
+  orderOfActions?: string[];
+  /**
+   * Custom list of actions by order
+   */
+  actions?: RestAction[];
+};
+
+const DEFAULT_ORDER_OF_ACTIONS = [
+  'reject',
+  'send',
+  'route',
+  'parseParams',
+  'invoke',
+];
+/**
  * The default implementation of SequenceHandler.
  *
  * @remarks
@@ -57,6 +79,11 @@ export interface SequenceHandler {
  * ```
  */
 export class DefaultSequence implements SequenceHandler {
+  constructor(
+    @inject(RestBindings.SEQUENCE_OPTIONS, {optional: true})
+    private options: SequenceOptions = {},
+  ) {}
+
   /**
    * Runs the default sequence. Given a handler context (request and response),
    * running the sequence will produce a response or an error.
@@ -84,16 +111,14 @@ export class DefaultSequence implements SequenceHandler {
   }
 
   protected async getActions(context: RequestContext) {
+    if (this.options.actions) return this.options.actions;
     const restActionBindings = context
       .find<RestAction>(filterByTag(RestTags.ACTION))
       .sort(
-        compareBindingsByTag(RestTags.ACTION_PHASE, [
-          'reject',
-          'send',
-          'route',
-          'parseParams',
-          'invoke',
-        ]),
+        compareBindingsByTag(
+          RestTags.ACTION_PHASE,
+          this.options.orderOfActions || DEFAULT_ORDER_OF_ACTIONS,
+        ),
       );
     const restActions: RestAction[] = [];
     for (const actionBinding of restActionBindings) {
