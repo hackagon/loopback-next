@@ -6,8 +6,13 @@
 import {bind, createBindingFromClass} from '@loopback/core';
 import {expect} from '@loopback/testlab';
 import chalk from 'chalk';
-import {asGreeter, Greeter, GreetingService, GREETING_SERVICE} from '..';
-import {GreetingApplication} from '../application';
+import {
+  asGreeter,
+  Greeter,
+  GreetingApplication,
+  GreetingService,
+  GREETING_SERVICE,
+} from '../..';
 
 describe('greeter-extension-pont', () => {
   let app: GreetingApplication;
@@ -25,7 +30,7 @@ describe('greeter-extension-pont', () => {
 
   it('supports options for the extension point', async () => {
     // Configure the extension point
-    app.bind('services.GreetingService.options').to({color: 'blue'});
+    app.configure(GREETING_SERVICE).to({color: 'blue'});
     greetingService = await app.get(GREETING_SERVICE);
     expect(greetingService.options).to.eql({color: 'blue'});
     const msg = await greetingService.greet('en', 'Raymond');
@@ -34,7 +39,7 @@ describe('greeter-extension-pont', () => {
 
   it('supports options for extensions', async () => {
     // Configure the ChineseGreeter
-    app.bind('greeters.ChineseGreeter.options').to({nameFirst: false});
+    app.configure('greeters.ChineseGreeter').to({nameFirst: false});
     const msg = await greetingService.greet('zh', 'Raymond');
     expect(msg).to.eql('你好，Raymond！');
   });
