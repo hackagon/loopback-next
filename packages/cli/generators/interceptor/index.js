@@ -20,8 +20,14 @@ module.exports = class InterceptorGenerator extends ArtifactGenerator {
   }
 
   _setupGenerator() {
+    this.option('global', {
+      description: 'Flag to indicate a global interceptor',
+      required: false,
+      type: Boolean,
+    });
+
     this.option('group', {
-      description: 'Name of the global interceptor group for ordering',
+      description: 'Group name for ordering the global interceptor',
       required: false,
       type: String,
     });
@@ -77,12 +83,43 @@ module.exports = class InterceptorGenerator extends ArtifactGenerator {
     });
   }
 
+  async promptGlobal() {
+    debug('Prompting for global interceptor flag');
+    if (this.shouldExit()) return;
+
+    if (this.options.global != null) {
+      Object.assign(this.artifactInfo, {isGlobal: !!this.options.global});
+      return;
+    }
+
+    // --group hints global
+    if (this.options.group != null) {
+      Object.assign(this.artifactInfo, {isGlobal: true});
+      return;
+    }
+
+    const prompts = [
+      {
+        type: 'confirm',
+        name: 'isGlobal',
+        message: 'Is it a global interceptor?',
+        default: true,
+      },
+    ];
+    return this.prompt(prompts).then(props => {
+      Object.assign(this.artifactInfo, props);
+      return props;
+    });
+  }
+
   async promptInterceptorGroup() {
+    if (!this.artifactInfo.isGlobal) return;
     debug('Prompting for global interceptor group');
     if (this.shouldExit()) return;
 
     if (this.options.group) {
       Object.assign(this.artifactInfo, {group: this.options.group});
+      return;
     }
 
     const prompts = [
@@ -92,7 +129,6 @@ module.exports = class InterceptorGenerator extends ArtifactGenerator {
         // capitalization
         message: utils.toClassName(this.artifactInfo.type) + ' group:',
         default: '',
-        when: !this.artifactInfo.group,
       },
     ];
     return this.prompt(prompts).then(props => {

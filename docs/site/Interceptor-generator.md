@@ -1,20 +1,20 @@
 ---
 lang: en
-title: 'Global interceptor generator'
+title: 'Interceptor generator'
 keywords: LoopBack 4.0, LoopBack 4
 sidebar: lb4_sidebar
-permalink: /doc/en/lb4/Global-interceptor-generator.html
+permalink: /doc/en/lb4/Interceptor-generator.html
 ---
 
 {% include content/generator-create-app.html lang=page.lang %}
 
 ### Synopsis
 
-Adds a new [global interceptor](Interceptors.md#global-interceptors) class to a
+Adds a new [interceptor](Interceptors.md#global-interceptors) class to a
 LoopBack application.
 
 ```sh
-lb4 interceptor [--group <group>] [<name>]
+lb4 interceptor [--global] [--group <group>] [<name>]
 ```
 
 ### Arguments and options
@@ -26,11 +26,16 @@ the name.
 `--group <group>` - Optional name of the interceptor group to sort the execution
 of interceptors by group.
 
+`--global` - Optional flag to indicate a global interceptor (default to `true`)
+
 ### Interactive Prompts
 
 The tool will prompt you for:
 
 - **Name of the interceptor.** _(interceptorName)_ If the name had been supplied
+  from the command line, the prompt is skipped.
+
+- **Is it a global interceptor.** _(isGlobal)_ If the flag had been supplied
   from the command line, the prompt is skipped.
 
 - **Group of the interceptor.** _(groupName)_ If the group had been supplied
@@ -47,6 +52,8 @@ Once all the prompts have been answered, the CLI will do the following:
 
 The generated class looks like:
 
+1. A global interceptor
+
 ```ts
 import {
   /* inject, */
@@ -60,7 +67,39 @@ import {
  * This class will be bound to the application as a global `Interceptor` during
  * `boot`
  */
-@globalInterceptor('auth')
+@globalInterceptor('auth', {tags: {name: 'test'}})
+export class TestInterceptor implements Provider<Interceptor> {
+  /*
+  constructor() {}
+  */
+
+  value() {
+    const interceptor: Interceptor = async (invocationCtx, next) => {
+      // Add pre-invocation logic here
+      const result = await next();
+      // Add post-invocation logic here
+      return result;
+    };
+    return interceptor;
+  }
+}
+```
+
+2. A non-global interceptor
+
+```ts
+import {
+  /* inject, */
+  bind,
+  Interceptor,
+  Provider,
+} from '@loopback/context';
+
+/**
+ * This class will be bound to the application as a global `Interceptor` during
+ * `boot`
+ */
+@bind({tags: {namespace: 'interceptors', name: 'test'}})
 export class TestInterceptor implements Provider<Interceptor> {
   /*
   constructor() {}

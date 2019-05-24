@@ -46,7 +46,7 @@ describe('lb4 interceptor', () => {
           }),
         )
         .withArguments('myInterceptor --group myGroup');
-      verifyGeneratedScript('myGroup');
+      verifyGeneratedScript(true, 'myGroup');
     });
 
     it('generates a interceptor from a config file', async () => {
@@ -60,6 +60,30 @@ describe('lb4 interceptor', () => {
         .withArguments('--config myinterceptorconfig.json');
       verifyGeneratedScript();
     });
+
+    it('generates a non-global interceptor from CLI', async () => {
+      await testUtils
+        .executeGenerator(generator)
+        .inDir(SANDBOX_PATH, () =>
+          testUtils.givenLBProject(SANDBOX_PATH, {
+            additionalFiles: SANDBOX_FILES,
+          }),
+        )
+        .withArguments('myInterceptor --no-global');
+      verifyGeneratedScript(false);
+    });
+
+    it('generates a non-global interceptor with prompts', async () => {
+      await testUtils
+        .executeGenerator(generator)
+        .inDir(SANDBOX_PATH, () =>
+          testUtils.givenLBProject(SANDBOX_PATH, {
+            additionalFiles: SANDBOX_FILES,
+          }),
+        )
+        .withPrompts({name: 'myInterceptor', isGlobal: false});
+      verifyGeneratedScript(false);
+    });
   });
 });
 
@@ -67,21 +91,36 @@ describe('lb4 interceptor', () => {
 const SCRIPT_APP_PATH = 'src/interceptors';
 const INDEX_FILE = path.join(SANDBOX_PATH, SCRIPT_APP_PATH, 'index.ts');
 
-function verifyGeneratedScript(group = '') {
+function verifyGeneratedScript(isGlobal = true, group = '') {
   const expectedFile = path.join(
     SANDBOX_PATH,
     SCRIPT_APP_PATH,
     'my-interceptor.interceptor.ts',
   );
   assert.file(expectedFile);
-  assert.fileContent(expectedFile, 'globalInterceptor');
+  if (isGlobal) {
+    assert.fileContent(expectedFile, 'globalInterceptor,');
+  } else {
+    assert.noFileContent(expectedFile, 'globalInterceptor,');
+  }
   assert.fileContent(
     expectedFile,
     /export class MyInterceptorInterceptor implements Provider<Interceptor> {/,
   );
-  assert.fileContent(expectedFile, `@globalInterceptor('${group}')`);
+  if (isGlobal) {
+    assert.fileContent(
+      expectedFile,
+      `@globalInterceptor('${group}', {tags: {name: 'myInterceptor'}})`,
+    );
+  } else {
+    assert.fileContent(
+      expectedFile,
+      `@bind({tags: {namespace: 'interceptors', name: 'myInterceptor'}})`,
+    );
+    assert.noFileContent(expectedFile, '@globalInterceptor');
+  }
   assert.fileContent(expectedFile, /value\(\) {/);
-  assert.fileContent(expectedFile, /async \(invocationCtx, next\) => \{/);
+  assert.fileContent(expectedFile, /async intercept\(/);
   assert.file(INDEX_FILE);
   assert.fileContent(
     INDEX_FILE,
