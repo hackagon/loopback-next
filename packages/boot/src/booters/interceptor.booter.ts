@@ -7,7 +7,6 @@ import {
   BindingScope,
   Constructor,
   createBindingFromClass,
-  GLOBAL_INTERCEPTOR_NAMESPACE,
   inject,
   Interceptor,
   Provider,
@@ -57,13 +56,12 @@ export class InterceptorProviderBooter extends BaseArtifactBooter {
 
     this.interceptors = this.classes as InterceptorProviderClass[];
     for (const interceptor of this.interceptors) {
-      debug('Bind global interceptor: %s', interceptor.name);
+      debug('Bind interceptor: %s', interceptor.name);
       const binding = createBindingFromClass(interceptor, {
-        namespace: GLOBAL_INTERCEPTOR_NAMESPACE,
         defaultScope: BindingScope.TRANSIENT,
       });
       this.app.add(binding);
-      debug('Binding created for global interceptor: %j', binding);
+      debug('Binding created for interceptor: %j', binding);
     }
   }
 }

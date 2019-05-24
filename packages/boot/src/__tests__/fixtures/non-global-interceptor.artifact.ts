@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {
-  globalInterceptor,
+  bind,
   Interceptor,
   InvocationContext,
   InvocationResult,
@@ -16,8 +16,8 @@ import {
  * This class will be bound to the application as a global `Interceptor` during
  * `boot`
  */
-@globalInterceptor('auth', {tags: {name: 'myGlobalInterceptor'}})
-export class MyGlobalInterceptor implements Provider<Interceptor> {
+@bind({tags: {namespace: 'interceptors', name: 'myInterceptor'}})
+export class MyInterceptor implements Provider<Interceptor> {
   /*
   constructor() {}
   */
